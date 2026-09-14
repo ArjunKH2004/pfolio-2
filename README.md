@@ -1,6 +1,8 @@
-# Arjun Anti-Portfolio
+# pfolio-2
 
-An experimental product-design portfolio by K H Arjun.
+A revised product design portfolio by K H Arjun.
+
+This repository began as a complete copy of `ArjunKH2004/arjun-anti-portfolio`. The revision keeps its restrained terminal and editorial identity while improving recruiter orientation, project navigation, accessibility, progressive enhancement, route resilience, search metadata and asset delivery.
 
 ## Local development
 
@@ -17,6 +19,17 @@ npm run dev
 npm run build
 ```
 
-The project uses React, Vite, Hono, and Cloudflare Workers.
+The project uses React, TypeScript, Vite, Hono and Cloudflare Workers.
 
-Live site: https://arjun-anti-portfolio--qat-arjun-st2s.docketsite.com/
+## Routes
+
+- `/`
+- `/projects`
+- `/projects/ksrtc-workflow`
+- `/projects/tejasvi-26`
+- `/projects/growit`
+- `/archive`
+- `/about`
+- `/contact`
+
+Unknown routes render an accessible 404 view. Core contact and resume information remains available when JavaScript is disabled.
