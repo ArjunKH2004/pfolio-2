@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { ArrowDown, ArrowLeft, ArrowRight, Camera, Download, ExternalLink, Menu, Minus, Plus, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, Download, ExternalLink, Menu, Minus, Plus, X } from 'lucide-react';
 import './styles.css';
 import AsciiBlackHole, { AsciiBlackHoleErrorBoundary } from './AsciiBlackHole';
 
@@ -39,10 +39,10 @@ const projects: Project[] = [
 ];
 
 const archiveItems: ArchiveItem[] = [
-  { number:'A-01', title:'Unique World Robotics India', year:'2025–26', status:'GRAPHIC DESIGNER', text:'Created visual assets and brand collateral across print and digital touchpoints for multiple robotics product lines.', lesson:'Experience working across different product identities while maintaining consistency across visual communication.' },
+  { number:'A-01', title:'Unique World Robotics India', year:'2025-26', status:'GRAPHIC DESIGNER', text:'Created visual assets and brand collateral across print and digital touchpoints for multiple robotics product lines.', lesson:'Experience working across different product identities while maintaining consistency across visual communication.' },
   { number:'A-02', title:'Elenco Corporation', year:'2025', status:'GRAPHIC DESIGNER', text:'Created visual content for marketing campaigns, working within established brand systems and communication requirements.', lesson:'Experience working alongside senior designers within a structured professional design workflow.' },
   { number:'A-03', title:'Svas.pro', year:'2025', status:'UI/UX DESIGNER', text:'Designed interfaces and interactive prototypes for a digital platform, incorporating user testing and feedback into the design process.', lesson:'Worked through Figma handoff with developers and produced 30+ social creatives, contributing to a reported 30% increase in engagement.' },
-  { number:'A-04', title:'MuLearn Foundation', year:'2023–25', status:'ASSOCIATE', text:'Worked across social media, campaigns, creative production, and community initiatives within a large student-led learning ecosystem.', lesson:'Contributed to campaigns including Global Game Jam Kerala and Perµte, with reported growth in registrations and engagement.' }
+  { number:'A-04', title:'MuLearn Foundation', year:'2023-25', status:'ASSOCIATE', text:'Worked across social media, campaigns, creative production, and community initiatives within a large student-led learning ecosystem.', lesson:'Contributed to campaigns including Global Game Jam Kerala and Perµte, with reported growth in registrations and engagement.' }
 ];
 
 const systemStatements = [
@@ -56,15 +56,83 @@ const capabilitiesList = [
   { n: '02', title: 'IDEAS TO INTERFACES.', copy: 'Turning raw concepts into intuitive UI.' },
   { n: '03', title: "WHY IT FAILS.", copy: "Figuring out why something isn't working." },
   { n: '04', title: "PROTOTYPING.", copy: "Building proofs when words aren't enough." },
-  { n: '05', title: 'PRODUCT POLISH.', copy: 'Making ugly products less ugly.' }
+  { n: '05', title: 'PRODUCT POLISH.', copy: 'Making rough products easier to trust.' }
 ];
+
+const profile = {
+  name: 'K H Arjun',
+  role: 'Product Designer',
+  focus: 'UX, interaction design and visual communication',
+  currentRole: 'UX Design Intern at Experion Technologies',
+  availability: 'Open to junior product design opportunities',
+  location: 'Thiruvananthapuram, Kerala, India',
+  email: 'kharjun48@gmail.com',
+  resumeUrl: '/arjun-kh-cv.pdf',
+  linkedinUrl: 'https://linkedin.com/in/kharjun',
+  behanceUrl: 'https://behance.net/arjunkh',
+  instagramUrl: 'https://www.instagram.com/a.rjunnn._/'
+} as const;
+
+const sections = [
+  { id: 'boot', label: 'home', path: '/' },
+  { id: 'who-am-i', label: 'who-am-i', path: '/who-am-i' },
+  { id: 'projects', label: 'projects', path: '/projects' },
+  { id: 'archive', label: 'archive', path: '/archive' },
+  { id: 'about', label: 'about', path: '/about' },
+  { id: 'contact', label: 'contact', path: '/contact' }
+] as const;
+
+type SectionId = typeof sections[number]['id'];
+type AppRoute =
+  | { kind: 'section'; section: SectionId }
+  | { kind: 'project'; project: Project }
+  | { kind: 'not-found'; path: string };
+
+const sectionById = Object.fromEntries(sections.map(section => [section.id, section])) as Record<SectionId, typeof sections[number]>;
+const sectionByPath = Object.fromEntries(sections.map(section => [section.path, section])) as Record<string, typeof sections[number]>;
+
+function normalizePath(pathname: string) {
+  const path = pathname || '/';
+  return path.length > 1 ? path.replace(/\/+$/, '') : '/';
+}
+
+function parseRoute(pathname: string): AppRoute {
+  const path = normalizePath(pathname);
+  const sectionMatch = sectionByPath[path];
+  if (sectionMatch) return { kind: 'section', section: sectionMatch.id };
+
+  const projectMatch = path.match(/^\/projects\/([^/]+)$/);
+  if (projectMatch) {
+    try {
+      const slug = decodeURIComponent(projectMatch[1]);
+      const project = projects.find(item => item.slug === slug);
+      if (project) return { kind: 'project', project };
+    } catch {
+      return { kind: 'not-found', path };
+    }
+  }
+
+  return { kind: 'not-found', path };
+}
+
+function getSectionPath(id: SectionId) {
+  return sectionById[id].path;
+}
+
+function getProjectPath(project: Project) {
+  return `/projects/${project.slug}`;
+}
+
+function getMailtoHref() {
+  return `mailto:${profile.email}?subject=${encodeURIComponent('Portfolio conversation')}`;
+}
 
 function Command({ children }: { children: React.ReactNode }) {
   return <div className="command"><span className="command-user">kharjun@internet</span><span>:~$</span> {children}</div>;
 }
 
-function ScrollLetterReveal({ text, breaks = [] }: { text: string; breaks?: number[] }) {
-  const ref = React.useRef<HTMLParagraphElement>(null);
+function ScrollLetterReveal({ text, breaks = [], as = 'p', id }: { text: string; breaks?: number[]; as?: 'p' | 'h1' | 'h2' | 'h3'; id?: string }) {
+  const ref = React.useRef<HTMLElement>(null);
   const [revealed, setRevealed] = useState(0);
   useEffect(() => {
     const element = ref.current;
@@ -86,7 +154,15 @@ function ScrollLetterReveal({ text, breaks = [] }: { text: string; breaks?: numb
     addEventListener('resize', request);
     return () => { removeEventListener('scroll', request); removeEventListener('resize', request); if (frame) cancelAnimationFrame(frame); };
   }, [text]);
-  return <p ref={ref} className="scroll-letter-reveal" aria-label={text}>{[...text].map((character, index) => <React.Fragment key={index}>{breaks.includes(index) && <br/>}<span className={index < revealed ? 'revealed' : ''} aria-hidden="true">{character === ' ' ? '\u00a0' : character}</span></React.Fragment>)}</p>;
+
+  const children = [...text].map((character, index) => (
+    <React.Fragment key={index}>
+      {breaks.includes(index) && <br/>}
+      <span className={index < revealed ? 'revealed' : ''} aria-hidden="true">{character === ' ' ? '\u00a0' : character}</span>
+    </React.Fragment>
+  ));
+
+  return React.createElement(as, { ref, id, className: 'scroll-letter-reveal', 'aria-label': text }, children);
 }
 
 function ProjectVisual({ slug, compact = false }: { slug: string; compact?: boolean }) {
@@ -282,10 +358,10 @@ function ResumeDetail({ close }: { close: () => void }) {
   return <div className={`project-modal-backdrop ${closing ? 'is-closing' : ''}`} onMouseDown={event => { if (event.target === event.currentTarget) requestClose(); }}>
     <div ref={dialogRef} className={`project-modal resume-modal ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-label="Resume PDF Document" style={{'--project-accent': '#0077B5'} as React.CSSProperties}>
       <header className="project-modal-header">
-        <div><span>DOCUMENT FILE / RÉSUMÉ</span><b>/about/arjun-kh-cv.pdf</b></div>
+        <div><span>DOCUMENT FILE / RESUME</span><b>/about/arjun-kh-cv.pdf</b></div>
         <div className="resume-header-actions">
           <a href="/arjun-kh-cv.pdf?v=2" download="arjun-kh-cv.pdf" className="resume-header-dl-btn"><Download size={15}/> DOWNLOAD PDF</a>
-          <button onClick={requestClose} aria-label="Close résumé modal"><X size={20}/></button>
+          <button onClick={requestClose} aria-label="Close resume modal"><X size={20}/></button>
         </div>
       </header>
       <div className="project-modal-scroll">
@@ -409,12 +485,12 @@ function VisitorCounter() {
 }
 
 const SLIDESHOW_PHOTOS = [
-  '/photos/arjun-1.jpg',
-  '/photos/arjun-2.jpg',
-  '/photos/arjun-3.jpg',
-  '/photos/arjun-4.jpg',
-  '/photos/arjun-5.jpg',
-];
+  { src: '/photos/arjun-1-800w.webp', srcSet: '/photos/arjun-1-400w.webp 400w, /photos/arjun-1-800w.webp 800w' },
+  { src: '/photos/arjun-2-800w.webp', srcSet: '/photos/arjun-2-400w.webp 400w, /photos/arjun-2-800w.webp 800w' },
+  { src: '/photos/arjun-3-800w.webp', srcSet: '/photos/arjun-3-400w.webp 400w, /photos/arjun-3-800w.webp 800w' },
+  { src: '/photos/arjun-4-800w.webp', srcSet: '/photos/arjun-4-400w.webp 400w, /photos/arjun-4-800w.webp 800w' },
+  { src: '/photos/arjun-5-800w.webp', srcSet: '/photos/arjun-5-400w.webp 400w, /photos/arjun-5-800w.webp 800w' },
+] as const;
 
 function AboutSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -430,11 +506,17 @@ function AboutSlideshow() {
   return (
     <div className="vhs-slideshow-container" aria-label="Arjun KH photo slideshow with CRT VHS scanlines filter">
       <div className="vhs-slideshow-track">
-        {SLIDESHOW_PHOTOS.map((src, index) => (
+        {SLIDESHOW_PHOTOS.map((photo, index) => (
           <img
-            key={src}
-            src={src}
-            alt={`Arjun KH portrait ${index + 1}`}
+            key={photo.src}
+            src={photo.src}
+            srcSet={photo.srcSet}
+            sizes="(max-width: 400px) 100vw, 400px"
+            width="800"
+            height="1000"
+            loading="lazy"
+            decoding="async"
+            alt={`K H Arjun portrait ${index + 1}`}
             className={`vhs-slide-img ${index === currentIndex ? 'is-active' : ''}`}
           />
         ))}
@@ -654,53 +736,215 @@ function AsciiStartup({ storageKey = 'kha-startup-seen' }: { storageKey?: string
 
 
 
+function NotFoundPage({ go }: { go: (id: SectionId) => void }) {
+  return (
+    <div className="site-shell route-not-found-shell">
+      <header className="topbar">
+        <a className="wordmark" href="/" onClick={(event) => { event.preventDefault(); go('boot'); }}>K H Arjun</a>
+      </header>
+      <main className="route-not-found" aria-labelledby="not-found-title">
+        <Command>route --status 404</Command>
+        <p className="route-not-found__code">404</p>
+        <h1 id="not-found-title">This route does not exist.</h1>
+        <p>The portfolio could not find that section or project. Use the links below to get back to the authored experience.</p>
+        <div className="route-not-found__actions" aria-label="Available routes">
+          <a href="/" onClick={(event) => { event.preventDefault(); go('boot'); }}>HOME</a>
+          <a href="/projects" onClick={(event) => { event.preventDefault(); go('projects'); }}>PROJECTS</a>
+          <a href="/contact" onClick={(event) => { event.preventDefault(); go('contact'); }}>CONTACT</a>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 function App() {
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
+  const [route, setRoute] = useState<AppRoute>(() => parseRoute(window.location.pathname));
   const [showResume, setShowResume] = useState(false);
   const [openArchive, setOpenArchive] = useState<number | null>(null);
   const [mobileNav, setMobileNav] = useState(false);
-  const [section, setSection] = useState('boot');
+  const [section, setSection] = useState<SectionId>(() => {
+    const initialRoute = parseRoute(window.location.pathname);
+    return initialRoute.kind === 'project' ? 'projects' : initialRoute.kind === 'section' ? initialRoute.section : 'boot';
+  });
+  const routeRef = useRef(route);
+  const suppressSectionUrlSyncRef = useRef(false);
+  const suppressTimerRef = useRef<number | null>(null);
+  const skipNextSectionScrollRef = useRef(false);
+
+  const setRouteFromLocation = React.useCallback(() => {
+    setRoute(parseRoute(window.location.pathname));
+  }, []);
+
+  const setSuppressSectionUrlSync = React.useCallback((duration = 900) => {
+    suppressSectionUrlSyncRef.current = true;
+    if (suppressTimerRef.current) window.clearTimeout(suppressTimerRef.current);
+    suppressTimerRef.current = window.setTimeout(() => {
+      suppressSectionUrlSyncRef.current = false;
+      suppressTimerRef.current = null;
+    }, duration);
+  }, []);
+
+  const writeRoute = React.useCallback((path: string, options: { replace?: boolean; prevPath?: string } = {}) => {
+    const nextRoute = parseRoute(path);
+    const state = { portfolio: true, prevPath: options.prevPath };
+    if (options.replace) window.history.replaceState(state, '', path);
+    else window.history.pushState(state, '', path);
+    setRoute(nextRoute);
+    return nextRoute;
+  }, []);
+
+  const go = React.useCallback((id: SectionId) => {
+    setMobileNav(false);
+    setSuppressSectionUrlSync();
+    skipNextSectionScrollRef.current = true;
+    const path = getSectionPath(id);
+    const previousPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    writeRoute(path, { prevPath: previousPath });
+    setSection(id);
+    requestAnimationFrame(() => {
+      const behavior: ScrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      if (id === 'boot') window.scrollTo({ top: 0, behavior });
+      else document.getElementById(id)?.scrollIntoView({ behavior, block: 'start' });
+    });
+  }, [setSuppressSectionUrlSync, writeRoute]);
+
+  const openProject = React.useCallback((project: Project) => {
+    setMobileNav(false);
+    setSection('projects');
+    const previousPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    writeRoute(getProjectPath(project), { prevPath: previousPath });
+  }, [writeRoute]);
+
+  const closeProject = React.useCallback(() => {
+    const currentRoute = routeRef.current;
+    const project = currentRoute.kind === 'project' ? currentRoute.project : null;
+    const historyState = window.history.state as { prevPath?: string } | null;
+    if (historyState?.prevPath && historyState.prevPath.startsWith('/')) {
+      window.history.back();
+    } else {
+      writeRoute('/projects', { replace: true });
+    }
+    window.setTimeout(() => {
+      if (project) document.querySelector<HTMLElement>(`[data-project-trigger="${project.slug}"]`)?.focus();
+    }, 80);
+  }, [writeRoute]);
+
+  const openResume = React.useCallback((event?: React.MouseEvent<HTMLAnchorElement>) => {
+    event?.preventDefault();
+    setShowResume(true);
+  }, []);
 
   useEffect(() => {
-    const ids = ['boot', 'who-am-i', 'projects', 'archive', 'about', 'contact'];
+    routeRef.current = route;
+  }, [route]);
+
+  useEffect(() => {
+    if (!window.history.state?.portfolio) {
+      window.history.replaceState({ ...(window.history.state || {}), portfolio: true }, '', window.location.href);
+    }
+    window.addEventListener('popstate', setRouteFromLocation);
+    return () => {
+      window.removeEventListener('popstate', setRouteFromLocation);
+      if (suppressTimerRef.current) window.clearTimeout(suppressTimerRef.current);
+    };
+  }, [setRouteFromLocation]);
+
+  useEffect(() => {
+    if (route.kind === 'section') {
+      setSection(route.section);
+      document.title = route.section === 'boot' ? 'K H Arjun | Product Designer' : `${sectionById[route.section].label} | K H Arjun`;
+      if (skipNextSectionScrollRef.current) {
+        skipNextSectionScrollRef.current = false;
+        return;
+      }
+      requestAnimationFrame(() => {
+        if (route.section === 'boot') window.scrollTo({ top: 0, behavior: 'auto' });
+        else document.getElementById(route.section)?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      });
+      return;
+    }
+
+    if (route.kind === 'project') {
+      setSection('projects');
+      document.title = `${route.project.name} | K H Arjun`;
+      return;
+    }
+
+    document.title = '404 | K H Arjun';
+  }, [route]);
+
+  useEffect(() => {
+    const ids: SectionId[] = ['boot', 'who-am-i', 'projects', 'archive', 'about', 'contact'];
     const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => entry.isIntersecting && setSection(entry.target.id));
-    }, { rootMargin: '-30% 0px -60% 0px' });
+      const visible = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      const id = visible.target.id as SectionId;
+      setSection(id);
+      if (routeRef.current.kind !== 'section' || suppressSectionUrlSyncRef.current) return;
+      const path = getSectionPath(id);
+      if (normalizePath(window.location.pathname) !== path) {
+        window.history.replaceState({ ...(window.history.state || {}), portfolio: true }, '', path);
+      }
+    }, { rootMargin: '-28% 0px -58% 0px', threshold: [0.2, 0.4, 0.6] });
     ids.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
     return () => observer.disconnect();
   }, []);
 
-  const go = (id: string) => {
-    setMobileNav(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  };
-  const closeProject = () => {
-    const slug = activeProject?.slug;
-    setActiveProject(null);
-    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-project-trigger="${slug}"]`)?.focus());
-  };
+  const activeProject = route.kind === 'project' ? route.project : null;
+  const navItems = sections.filter(item => ['projects', 'archive', 'about', 'contact'].includes(item.id));
+  const isNavCurrent = (id: SectionId) => section === id || (route.kind === 'project' && id === 'projects');
+  const emailHref = getMailtoHref();
 
-  return <><AsciiStartup /><div className="site-shell">
+  if (route.kind === 'not-found') {
+    return <NotFoundPage go={go} />;
+  }
+
+  return <><div className="site-shell">
     <header className="topbar">
-      <button className="wordmark" onClick={() => go('boot')}>K H Arjun</button>
+      <a className="wordmark" href="/" onClick={(event) => { event.preventDefault(); go('boot'); }}>K H Arjun</a>
       <nav className="desktop-nav" aria-label="Primary navigation">
-        {['projects', 'archive', 'about', 'contact'].map(item => <button key={item} className={section === item ? 'active' : ''} onClick={() => go(item)}>/{item}</button>)}
+        {navItems.map(item => (
+          <a
+            key={item.id}
+            href={item.path}
+            className={isNavCurrent(item.id) ? 'active' : ''}
+            aria-current={isNavCurrent(item.id) ? 'page' : undefined}
+            onClick={(event) => { event.preventDefault(); go(item.id); }}
+          >/{item.label}</a>
+        ))}
       </nav>
       <div className="topbar-right">
         <LiveClock />
         <VisitorCounter />
       </div>
-      <button className="mobile-menu" onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle navigation">{mobileNav ? <X/> : <Menu/>}</button>
+      <button className="mobile-menu" onClick={() => setMobileNav(!mobileNav)} aria-label="Toggle navigation" aria-expanded={mobileNav} aria-controls="mobile-nav">{mobileNav ? <X/> : <Menu/>}</button>
     </header>
 
-    {mobileNav && <div className="mobile-nav">{['projects','archive','about','contact'].map((item, i) => <button key={item} onClick={() => go(item)}><span>0{i+1}</span>/{item}<ArrowRight/></button>)}</div>}
+    {mobileNav && <nav id="mobile-nav" className="mobile-nav" aria-label="Mobile navigation">{navItems.map((item, i) => (
+      <a key={item.id} href={item.path} aria-current={isNavCurrent(item.id) ? 'page' : undefined} onClick={(event) => { event.preventDefault(); go(item.id); }}><span>0{i+1}</span>/{item.label}<ArrowRight/></a>
+    ))}</nav>}
 
     <main>
-      <section id="boot" className="boot-section">
+      <section id="boot" className="boot-section" aria-labelledby="hero-title">
         <Command>webpage --open</Command>
         <div className="hero-composition">
-          <h1>I'VE BEEN MAKING THINGS FOR A WHILE.</h1>
-          <div className="visual">
+          <div className="hero-recruiter-copy">
+            <p className="hero-kicker">{profile.role} / UX Design Intern</p>
+            <h1 id="hero-title">{profile.name}</h1>
+            <p className="hero-role-line">{profile.focus}</p>
+            <dl className="hero-facts" aria-label="Current role and availability">
+              <div><dt>NOW</dt><dd>{profile.currentRole}</dd></div>
+              <div><dt>OPEN TO WORK</dt><dd>{profile.availability}</dd></div>
+              <div><dt>BASED</dt><dd>{profile.location}</dd></div>
+            </dl>
+            <div className="hero-cta-row" aria-label="Primary contact actions">
+              <a href={emailHref} className="terminal-cta"><span>$</span> email Arjun<ArrowRight size={16}/></a>
+              <a href={profile.resumeUrl} className="terminal-cta" onClick={openResume}><span>$</span> view resume<ExternalLink size={16}/></a>
+            </div>
+          </div>
+          <div className="visual" aria-hidden="true">
             <AsciiBlackHoleErrorBoundary>
               <AsciiBlackHole />
             </AsciiBlackHoleErrorBoundary>
@@ -711,70 +955,81 @@ function App() {
         <div className="boot-index">PERSONAL ENVIRONMENT<br/>v.14.10 / ONLINE</div>
       </section>
 
-      <section id="who-am-i" className="who-section section-pad">
+      <section id="who-am-i" className="who-section section-pad" aria-labelledby="who-heading">
         <Command>who-am-i</Command>
-        <div className="section-heading who-heading"><ScrollLetterReveal text="HERE'S WHAT I ACTUALLY WANT YOU TO KNOW." breaks={[23]}/></div>
+        <div className="section-heading who-heading"><ScrollLetterReveal as="h2" id="who-heading" text="HERE'S WHAT I ACTUALLY WANT YOU TO KNOW." breaks={[23]}/></div>
         <div className="statements">
-          {systemStatements.map(s => <article key={s.n} className="statement"><div className="statement-header"><span>{s.n}</span><h2>{s.title}</h2></div><p>{s.copy}</p></article>)}
+          {systemStatements.map(s => <article key={s.n} className="statement"><div className="statement-header"><span>{s.n}</span><h3>{s.title}</h3></div><p>{s.copy}</p></article>)}
         </div>
       </section>
 
-      <section id="projects" className="work-section section-pad">
+      <section id="projects" className="work-section section-pad" aria-labelledby="projects-heading">
         <Command>ls /projects</Command>
-        <div className="section-heading work-heading"><ScrollLetterReveal text="THREE THINGS THAT MADE IT OUT." breaks={[18]}/></div>
+        <div className="section-heading work-heading"><ScrollLetterReveal as="h2" id="projects-heading" text="THREE THINGS THAT MADE IT OUT." breaks={[18]}/></div>
         <div className="project-list project-card-grid">
           {projects.map(project => <article key={project.slug} className="project-row project-card">
-            <div className="project-preview"><ProjectVisual slug={project.slug} compact/></div>
-            <div className="project-meta"><span>{project.number}</span><span>{project.year}</span><span>{project.kind}</span><span>{project.status}</span></div>
-            <h2>{project.name}</h2>
-            <p>{project.line}</p>
-            <button className="open-command" data-project-trigger={project.slug} onClick={() => setActiveProject(project)}><span>$</span> open {project.name}<ArrowRight size={16}/></button>
+            <a
+              href={getProjectPath(project)}
+              className="project-card-link"
+              data-project-trigger={project.slug}
+              aria-labelledby={`project-card-title-${project.slug}`}
+              onClick={(event) => { event.preventDefault(); openProject(project); }}
+              onKeyDown={(event) => { if (event.key === ' ') { event.preventDefault(); openProject(project); } }}
+            >
+              <div className="project-preview"><ProjectVisual slug={project.slug} compact/></div>
+              <div className="project-meta"><span>{project.number}</span><span>{project.year}</span><span>{project.kind}</span><span>{project.status}</span></div>
+              <h3 id={`project-card-title-${project.slug}`}>{project.name}</h3>
+              <p>{project.line}</p>
+              <span className="open-command" aria-hidden="true"><span>$</span> open {project.name}<ArrowRight size={16}/></span>
+            </a>
           </article>)}
         </div>
         <div className="projects-more-bar">
-          <a href="https://behance.net/arjunkh" target="_blank" rel="noreferrer" className="btn-view-more-behance">
+          <a href={profile.behanceUrl} target="_blank" rel="noreferrer" className="btn-view-more-behance">
             VIEW MORE WORKS <ExternalLink size={16}/>
           </a>
         </div>
       </section>
 
-      <section id="archive" className="archive-section section-pad">
+      <section id="archive" className="archive-section section-pad" aria-labelledby="archive-heading">
         <Command>ls /archive</Command>
-        <div className="section-heading archive-heading"><ScrollLetterReveal text="A HISTORY OF MAKING" breaks={[10]}/><span>STILL BUILDING<br/>STILL LEARNING</span></div>
+        <div className="section-heading archive-heading"><ScrollLetterReveal as="h2" id="archive-heading" text="A HISTORY OF MAKING" breaks={[10]}/><span>STILL BUILDING<br/>STILL LEARNING</span></div>
         <div className="archive-list">
           {archiveItems.map((item, i) => {
             const open = openArchive === i;
+            const buttonId = `archive-trigger-${item.number}`;
+            const panelId = `archive-panel-${item.number}`;
             return <article key={item.number} className={`archive-item ${open ? 'open' : ''}`}>
-              <button onClick={() => setOpenArchive(open ? null : i)} aria-expanded={open}>
+              <button id={buttonId} onClick={() => setOpenArchive(open ? null : i)} aria-expanded={open} aria-controls={panelId}>
                 <span className="archive-no">{item.number}</span><h3>{item.title}</h3><span className="archive-year">{item.year}</span><span className="archive-status">{item.status}</span>{open ? <Minus/> : <Plus/>}
               </button>
-              <div className="archive-detail"><div><span>WHAT I DID</span><p>{item.text}</p></div><div><span>WHAT REMAINED</span><p>{item.lesson}</p></div></div>
+              <div id={panelId} className="archive-detail" role="region" aria-labelledby={buttonId} hidden={!open}><div><span>WHAT I DID</span><p>{item.text}</p></div><div><span>WHAT REMAINED</span><p>{item.lesson}</p></div></div>
             </article>
           })}
         </div>
       </section>
 
-      <section id="about" className="about-section section-pad">
+      <section id="about" className="about-section section-pad" aria-labelledby="about-heading">
         <Command>cat /about</Command>
         <div className="about-grid">
           <div className="about-left-col">
-            <ScrollLetterReveal text="WHO'S BEHIND ALL THIS?" breaks={[13]}/>
+            <ScrollLetterReveal as="h2" id="about-heading" text="WHO'S BEHIND ALL THIS?" breaks={[13]}/>
             <AboutSlideshow />
           </div>
-          <div className="about-copy"><p>I'm Arjun, a product designer working across UI/UX, interaction design and visual communication. I use field research, journey mapping and prototypes to turn evidence into clearer decisions.</p><dl><div><dt>NOW</dt><dd>UX Design Intern<br/><small className="about-subtext">Experion Technologies</small></dd></div><div><dt>BASED</dt><dd>Thiruvananthapuram, Kerala, India<br/><small className="about-subtext">Open to junior product design opportunities</small></dd></div><div><dt>EXPERIENCE</dt><dd>2+ years across product, brand and digital communication</dd></div><div><dt>EDUCATION</dt><dd>B.Tech in Artificial Intelligence & Machine Learning<br/><small className="about-subtext">Marian Engineering College, affiliated to APJ Abdul Kalam Technological University</small></dd></div></dl></div>
+          <div className="about-copy"><p>I'm Arjun, a product designer working across product UX, interaction design and visual systems. I use research, mapping and prototyping to make complex flows easier to understand and use.</p><dl><div><dt>NOW</dt><dd>UX Design Intern<br/><small className="about-subtext">Experion Technologies</small></dd></div><div><dt>BASED</dt><dd>Thiruvananthapuram, Kerala, India<br/><small className="about-subtext">Open to junior product design opportunities</small></dd></div><div><dt>EXPERIENCE</dt><dd>2+ years across product, brand and digital communication</dd></div><div><dt>EDUCATION</dt><dd>B.Tech in Artificial Intelligence & Machine Learning<br/><small className="about-subtext">Marian Engineering College, affiliated to APJ Abdul Kalam Technological University</small></dd></div></dl></div>
         </div>
       </section>
 
-      <section className="capabilities-section section-pad">
+      <section className="capabilities-section section-pad" aria-labelledby="capabilities-heading">
         <Command>./what-i-do</Command>
         <div className="section-heading capabilities-heading">
-          <ScrollLetterReveal text="I CAN HELP WITH" breaks={[6]}/>
+          <ScrollLetterReveal as="h2" id="capabilities-heading" text="I CAN HELP WITH" breaks={[6]}/>
         </div>
         <div className="statements capabilities-statements">
           {capabilitiesList.map(s => (
             <article key={s.n} className="statement capability-statement">
               <span>{s.n}</span>
-              <h2>{s.title}</h2>
+              <h3>{s.title}</h3>
               <p>{s.copy}</p>
             </article>
           ))}
@@ -782,23 +1037,26 @@ function App() {
         <p className="tools-line"><span>Things I use along the way:</span> Figma, code, research, paper, and unreasonable amounts of iteration.</p>
       </section>
 
-      <section className="resume-section section-pad">
-        <div><p>WANT THE BORING VERSION?</p><a href="/arjun-kh-cv.pdf" onClick={(e) => { e.preventDefault(); setShowResume(true); }}>VIEW RÉSUMÉ <ExternalLink size={17}/></a></div>
+      <section className="resume-section section-pad" aria-labelledby="resume-heading">
+        <div><p id="resume-heading">WANT THE PDF VERSION?</p><a href={profile.resumeUrl} onClick={openResume}>VIEW RESUME <ExternalLink size={17}/></a></div>
       </section>
 
-      <section id="contact" className="contact-section section-pad">
+      <section id="contact" className="contact-section section-pad" aria-labelledby="contact-heading">
         <Command>./contact</Command>
-        <ScrollLetterReveal text="IF YOU HAVE A PROBLEM WORTH SOLVING, LET'S TALK." breaks={[21,36]}/>
+        <ScrollLetterReveal as="h2" id="contact-heading" text="FOR ROLES, COLLABORATION, OR QUESTIONS ABOUT THE WORK, REACH OUT." breaks={[10,25,44]}/>
+        <div className="contact-cta-row" aria-label="Contact actions">
+          <a href={emailHref} className="terminal-cta contact-primary"><span>$</span> email {profile.email}<ArrowRight size={16}/></a>
+          <a href={profile.resumeUrl} className="terminal-cta" onClick={openResume}><span>$</span> view resume<ExternalLink size={16}/></a>
+        </div>
 
         <div className="site-footer">
           <div className="site-footer-connect">
             <span className="footer-col-label">CONNECT</span>
             <ul className="footer-link-list">
-              <li><a href="https://linkedin.com/in/kharjun" target="_blank" rel="noreferrer">LinkedIn</a></li>
-              <li><a href="https://behance.net/arjunkh" target="_blank" rel="noreferrer">Behance</a></li>
-              <li><a href="https://www.instagram.com/a.rjunnn._/" target="_blank" rel="noreferrer">Instagram</a></li>
-              <li><a href="https://wa.me/918848043184" target="_blank" rel="noreferrer">WhatsApp</a></li>
-              <li><a href="https://buymeacoffee.com/kharjun" target="_blank" rel="noreferrer">Buy Me a Coffee</a></li>
+              <li><a href={profile.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a></li>
+              <li><a href={profile.behanceUrl} target="_blank" rel="noreferrer">Behance</a></li>
+              <li><a href={profile.instagramUrl} target="_blank" rel="noreferrer">Instagram</a></li>
+              <li><a href={emailHref}>Email</a></li>
             </ul>
           </div>
 
