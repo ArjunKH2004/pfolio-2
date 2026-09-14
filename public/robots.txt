@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kharjun.netlify.app/sitemap.xml
