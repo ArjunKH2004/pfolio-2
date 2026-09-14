@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+const page = await browser.newPage({viewport:{width:1280,height:900}, deviceScaleFactor:1});
+const errors=[]; page.on('console',m=>m.type()==='error'&&errors.push(m.text())); page.on('pageerror',e=>errors.push(e.message));
+await page.goto('http://127.0.0.1:4173',{waitUntil:'networkidle'});
+await page.screenshot({path:'/tmp/mfg-app-preview/arjun-anti-portfolio/desktop.png',fullPage:false});
+const desktop={title:await page.title(),bodyWidth:await page.evaluate(()=>document.body.scrollWidth),viewport:await page.evaluate(()=>innerWidth),h1:await page.locator('h1').first().innerText(),projects:await page.locator('.project-row').count(),archive:await page.locator('.archive-item').count()};
+await page.locator('.open-command').first().click(); await page.waitForTimeout(400);
+const detail={visible:await page.locator('.detail-page').isVisible(),heading:await page.locator('.detail-intro h1').innerText(),bodyWidth:await page.evaluate(()=>document.body.scrollWidth),viewport:await page.evaluate(()=>innerWidth)};
+await page.locator('.back-button').click();
+await page.setViewportSize({width:390,height:844}); await page.goto('http://127.0.0.1:4173',{waitUntil:'networkidle'});
+await page.screenshot({path:'/tmp/mfg-app-preview/arjun-anti-portfolio/mobile.png',fullPage:false});
+const mobile={bodyWidth:await page.evaluate(()=>document.body.scrollWidth),viewport:await page.evaluate(()=>innerWidth),menu:await page.locator('.mobile-menu').isVisible(),hero:await page.locator('.boot-copy h1').innerText()};
+console.log(JSON.stringify({desktop,detail,mobile,errors},null,2)); await browser.close();

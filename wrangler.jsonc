@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Worker name is replaced during hydration (Story 1.4)
+  "name": "mfg-app-starter",
+  "main": "src/server/index.ts",
+  "compatibility_date": "2026-07-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    // Serves everything under dist/client/ as static assets (AD-14)
+    "directory": "./dist/client/",
+    "not_found_handling": "single-page-application",
+    // Exposes the asset store to Worker code via env.ASSETS.fetch (DW-22)
+    "binding": "ASSETS",
+  },
+  // No platform credentials or provider identifiers (AD-13a).
+  // Declare bindings by logical name only when the agent adds an App Database (AD-18):
+  //   "d1_databases": [{ "binding": "DB", "database_name": "my-db-name" }]
+  // Or object storage for visitor uploads (AD-18):
+  //   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "my-files" }]
+}

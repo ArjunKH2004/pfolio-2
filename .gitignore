@@ -1,0 +1,8 @@
+/node_modules
+/dist
+/.mfg
+/.wrangler
+# The vendored @mfg-agent/apps build IS committed (ADR-0020) so the Starter is
+# self-contained on a fresh checkout. The repo-root .gitignore has a bare `dist/`
+# that would otherwise ignore vendor/apps/dist — re-include it here.
+!/vendor/apps/dist/

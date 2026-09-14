@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const errors=[];
+const desktop=await browser.newPage({viewport:{width:1280,height:900}});
+desktop.on('console',m=>m.type()==='error'&&errors.push(m.text()));desktop.on('pageerror',e=>errors.push(e.message));
+await desktop.goto('http://127.0.0.1:4173',{waitUntil:'networkidle'});await desktop.evaluate(()=>document.fonts.ready);
+const d=await desktop.evaluate(()=>{const h=document.querySelector('.boot-copy h1');const b=document.body;const c=getComputedStyle(h);return{font:c.fontFamily,fontStretch:c.fontStretch,variation:c.fontVariationSettings,overflow:document.documentElement.scrollWidth-innerWidth,loaded:document.fonts.check('600 72px "Mona Sans"'),mono:document.fonts.check('400 12px "Mona Sans Mono"'),bodyWidth:b.getBoundingClientRect().width}});
+await desktop.screenshot({path:'/tmp/mfg-app-preview/arjun-anti-portfolio/mona-widened-desktop.png'});
+await desktop.goto('http://127.0.0.1:4173/work/ksrtc-workflow',{waitUntil:'networkidle'});await desktop.evaluate(()=>document.fonts.ready);const detail=await desktop.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,font:getComputedStyle(document.querySelector('.detail-intro h1')).fontFamily,variation:getComputedStyle(document.querySelector('.detail-intro h1')).fontVariationSettings}));
+const mobile=await browser.newPage({viewport:{width:390,height:844}});mobile.on('pageerror',e=>errors.push(e.message));await mobile.goto('http://127.0.0.1:4173',{waitUntil:'networkidle'});await mobile.evaluate(()=>document.fonts.ready);const m=await mobile.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,font:getComputedStyle(document.querySelector('.boot-copy h1')).fontFamily,variation:getComputedStyle(document.querySelector('.boot-copy h1')).fontVariationSettings}));await mobile.screenshot({path:'/tmp/mfg-app-preview/arjun-anti-portfolio/mona-widened-mobile.png'});
+console.log(JSON.stringify({desktop:d,detail,mobile:m,errors},null,2));await browser.close();
